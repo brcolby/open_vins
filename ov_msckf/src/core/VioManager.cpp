@@ -1,3 +1,4 @@
+#include "utils/gestalt_hooks.h"
 /*
  * OpenVINS: An Open Platform for Visual-Inertial Research
  * Copyright (C) 2018-2023 Patrick Geneva
@@ -43,6 +44,8 @@
 #include "update/UpdaterSLAM.h"
 #include "update/UpdaterZeroVelocity.h"
 
+
+// gestalt-openvins-sweep: observation-only counters
 using namespace ov_core;
 using namespace ov_type;
 using namespace ov_msckf;
@@ -517,11 +520,13 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
   };
   std::sort(featsup_MSCKF.begin(), featsup_MSCKF.end(), compare_feat);
 
+  const int gestalt_candidates = (int)featsup_MSCKF.size();
   // Pass them to our MSCKF updater
   // NOTE: if we have more then the max, we select the "best" ones (i.e. max tracks) for this update
   // NOTE: this should only really be used if you want to track a lot of features, or have limited computational resources
   if ((int)featsup_MSCKF.size() > state->_options.max_msckf_in_update)
     featsup_MSCKF.erase(featsup_MSCKF.begin(), featsup_MSCKF.end() - state->_options.max_msckf_in_update);
+  const int gestalt_selected = (int)featsup_MSCKF.size();
   updaterMSCKF->update(state, featsup_MSCKF);
   propagator->invalidate_cache();
   rT4 = boost::posix_time::microsec_clock::local_time();
@@ -608,6 +613,12 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
   double time_slam_delay = (rT6 - rT5).total_microseconds() * 1e-6;
   double time_marg = (rT7 - rT6).total_microseconds() * 1e-6;
   double time_total = (rT7 - rT1).total_microseconds() * 1e-6;
+  int gestalt_tracks = 0;
+  for (const auto &entry : trackFEATS->get_last_obs()) gestalt_tracks += entry.second.size();
+  gestalt_ov_stats(message.timestamp, gestalt_tracks, gestalt_candidates, gestalt_selected,
+      featsup_MSCKF.size(), feats_slam_UPDATE.size(), state->_features_SLAM.size(), state->_clones_IMU.size(),
+      time_track, time_prop, time_msckf, time_slam_update, time_slam_delay, time_marg);
+
 
   // Timing information
   PRINT_DEBUG(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);

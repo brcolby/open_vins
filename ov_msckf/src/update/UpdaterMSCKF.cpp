@@ -1,3 +1,5 @@
+#include "utils/gestalt_hooks.h"
+
 /*
  * OpenVINS: An Open Platform for Visual-Inertial Research
  * Copyright (C) 2018-2023 Patrick Geneva
@@ -283,6 +285,7 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
 
   // 6. With all good features update the state
   StateHelper::EKFUpdate(state, Hx_order_big, Hx_big, res_big, R_big);
+  gestalt_vio_visual_update();
   rT5 = boost::posix_time::microsec_clock::local_time();
 
   // Debug print timing information

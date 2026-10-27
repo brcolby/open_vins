@@ -23,6 +23,8 @@
 #define OV_MSCKF_ROSVISUALIZER_HELPER_H
 
 #include <Eigen/Eigen>
+#include <fstream>
+#include <memory>
 
 #if ROS_AVAILABLE == 1
 #include <sensor_msgs/PointCloud.h>

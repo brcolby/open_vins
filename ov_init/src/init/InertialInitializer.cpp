@@ -1,3 +1,4 @@
+#include "utils/gestalt_hooks.h"
 /*
  * OpenVINS: An Open Platform for Visual-Inertial Research
  * Copyright (C) 2018-2023 Patrick Geneva
@@ -32,6 +33,7 @@
 #include "utils/print.h"
 #include "utils/quat_ops.h"
 #include "utils/sensor_data.h"
+
 
 using namespace ov_core;
 using namespace ov_type;
@@ -137,6 +139,7 @@ bool InertialInitializer::initialize(double &timestamp, Eigen::MatrixXd &covaria
   bool is_still = (!disparity_detected_moving_1to0 && !disparity_detected_moving_2to1);
   if (((has_jerk && wait_for_jerk) || (is_still && !wait_for_jerk)) && params.init_imu_thresh > 0.0) {
     PRINT_DEBUG(GREEN "[init]: USING STATIC INITIALIZER METHOD!\n" RESET);
+    gestalt_ov_init_branch(1);
     return init_static->initialize(timestamp, covariance, order, t_imu, wait_for_jerk);
   } else if (params.init_dyn_use && !is_still) {
 #ifndef __ANDROID__
@@ -144,6 +147,7 @@ bool InertialInitializer::initialize(double &timestamp, Eigen::MatrixXd &covaria
     std::map<double, std::shared_ptr<ov_type::PoseJPL>> _clones_IMU;
     std::unordered_map<size_t, std::shared_ptr<ov_type::Landmark>> _features_SLAM;
     if (init_dynamic) {
+      gestalt_ov_init_branch(2);
       return init_dynamic->initialize(timestamp, covariance, order, t_imu, _clones_IMU, _features_SLAM);
     }
 #else

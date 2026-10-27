@@ -37,6 +37,7 @@
 
 #include "cam/CamEqui.h"
 #include "cam/CamRadtan.h"
+#include <stdexcept>
 #include "feat/FeatureInitializerOptions.h"
 #include "track/TrackBase.h"
 #include "utils/colors.h"
@@ -245,6 +246,10 @@ struct VioManagerOptions {
         std::vector<double> cam_calib2 = {0, 0, 0, 0};
         parser->parse_external("relative_config_imucam", "cam" + std::to_string(i), "intrinsics", cam_calib1);
         parser->parse_external("relative_config_imucam", "cam" + std::to_string(i), "distortion_coeffs", cam_calib2);
+        if ((dist_model != "radtan" && dist_model != "equidistant") ||
+            (dist_model == "radtan" && cam_calib2.size() != 4 && cam_calib2.size() != 5) ||
+            (dist_model == "equidistant" && cam_calib2.size() != 4))
+          throw std::runtime_error("Unsupported Gestalt camera distortion model/count");
         Eigen::VectorXd cam_calib = Eigen::VectorXd::Zero(8);
         cam_calib << cam_calib1.at(0), cam_calib1.at(1), cam_calib1.at(2), cam_calib1.at(3), cam_calib2.at(0), cam_calib2.at(1),
             cam_calib2.at(2), cam_calib2.at(3);
@@ -273,7 +278,7 @@ struct VioManagerOptions {
           camera_intrinsics.insert({i, std::make_shared<ov_core::CamEqui>(matrix_wh.at(0), matrix_wh.at(1))});
           camera_intrinsics.at(i)->set_value(cam_calib);
         } else {
-          camera_intrinsics.insert({i, std::make_shared<ov_core::CamRadtan>(matrix_wh.at(0), matrix_wh.at(1))});
+          camera_intrinsics.insert({i, std::make_shared<ov_core::CamRadtan>(matrix_wh.at(0), matrix_wh.at(1), cam_calib2.size() == 5 ? cam_calib2.at(4) : 0.0)});
           camera_intrinsics.at(i)->set_value(cam_calib);
         }
         camera_extrinsics.insert({i, cam_eigen});

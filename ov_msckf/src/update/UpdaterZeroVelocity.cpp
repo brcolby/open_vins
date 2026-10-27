@@ -228,17 +228,21 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timest
     FeatureHelper::compute_disparity(_db, time0_cam, time1_cam, disp_avg, disp_var, num_features);
 
     // Check if this disparity is enough to be classified as moving
-    disparity_passed = (disp_avg < _zupt_max_disparity && num_features > 20);
+    const double capture_dt = time1_cam - time0_cam;
+    const double disparity_limit = _zupt_max_disparity * 15.0 * capture_dt;
+    disparity_passed = (std::isfinite(capture_dt) && capture_dt > 0 &&
+                        std::isfinite(disp_avg) && disp_avg >= 0 &&
+                        disp_avg < disparity_limit && num_features > 20);
     if (disparity_passed) {
-      PRINT_INFO(CYAN "[ZUPT]: passed disparity (%.3f < %.3f, %d features)\n" RESET, disp_avg, _zupt_max_disparity, (int)num_features);
+      PRINT_INFO(CYAN "[ZUPT]: passed disparity (%.3f < %.3f, %d features)\n" RESET, disp_avg, disparity_limit, (int)num_features);
     } else {
-      PRINT_DEBUG(YELLOW "[ZUPT]: failed disparity (%.3f > %.3f, %d features)\n" RESET, disp_avg, _zupt_max_disparity, (int)num_features);
+      PRINT_DEBUG(YELLOW "[ZUPT]: failed disparity (%.3f > %.3f, %d features)\n" RESET, disp_avg, disparity_limit, (int)num_features);
     }
   }
 
   // Check if we are currently zero velocity
   // We need to pass the chi2 and not be above our velocity threshold
-  if (!disparity_passed && (chi2 > _options.chi2_multipler * chi2_check || state->_imu->vel().norm() > _zupt_max_velocity)) {
+  if (!disparity_passed && (_options.chi2_multipler <= 0 || chi2 > _options.chi2_multipler * chi2_check || state->_imu->vel().norm() > _zupt_max_velocity)) {
     last_zupt_state_timestamp = 0.0;
     last_zupt_count = 0;
     PRINT_DEBUG(YELLOW "[ZUPT]: rejected |v_IinG| = %.3f (chi2 %.3f > %.3f)\n" RESET, state->_imu->vel().norm(), chi2,

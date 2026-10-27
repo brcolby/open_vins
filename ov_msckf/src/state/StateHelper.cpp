@@ -104,7 +104,7 @@ void StateHelper::EKFPropagation(std::shared_ptr<State> state, const std::vector
   bool found_neg = false;
   for (int i = 0; i < diags.rows(); i++) {
     if (diags(i) < 0.0) {
-      PRINT_WARNING(RED "StateHelper::EKFPropagation() - diagonal at %d is %.2f\n" RESET, i, diags(i));
+      PRINT_WARNING(RED "StateHelper::EKFPropagation() - diagonal at %d is %.17g\n" RESET, i, diags(i));
       found_neg = true;
     }
   }
@@ -173,7 +173,7 @@ void StateHelper::EKFUpdate(std::shared_ptr<State> state, const std::vector<std:
   bool found_neg = false;
   for (int i = 0; i < diags.rows(); i++) {
     if (diags(i) < 0.0) {
-      PRINT_WARNING(RED "StateHelper::EKFUpdate() - diagonal at %d is %.2f\n" RESET, i, diags(i));
+      PRINT_WARNING(RED "StateHelper::EKFUpdate() - diagonal at %d is %.17g\n" RESET, i, diags(i));
       found_neg = true;
     }
   }
