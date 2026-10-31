@@ -106,6 +106,14 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timest
     return false;
   }
 
+  // Missing/interpolated samples cannot establish a quiet window or learn bias.
+  for (const auto &sample : imu_recent) {
+    if (sample.noise_variance_scale != 1.0) {
+      last_zupt_state_timestamp = 0.0;
+      return false;
+    }
+  }
+
   // If we should integrate the acceleration and say the velocity should be zero
   // Also if we should still inflate the bias based on their random walk noises
   bool integrated_accel_constraint = false; // untested

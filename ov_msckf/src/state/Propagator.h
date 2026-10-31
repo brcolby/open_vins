@@ -158,6 +158,7 @@ public:
     // interpolate between the two times
     ov_core::ImuData data;
     data.timestamp = timestamp;
+    data.noise_variance_scale = ov_core::imu_interval_variance(imu_1, imu_2);
     data.am = (1 - lambda) * imu_1.am + lambda * imu_2.am;
     data.wm = (1 - lambda) * imu_1.wm + lambda * imu_2.wm;
     return data;

@@ -226,6 +226,7 @@ bool Propagator::fast_state_propagate(std::shared_ptr<State> state, double times
     Qc.block(3, 3, 3, 3) = _noises.sigma_a_2 / dt * Eigen::Matrix3d::Identity();
     Qc.block(6, 6, 3, 3) = _noises.sigma_wb_2 * dt * Eigen::Matrix3d::Identity();
     Qc.block(9, 9, 3, 3) = _noises.sigma_ab_2 * dt * Eigen::Matrix3d::Identity();
+    Qc *= ov_core::imu_interval_variance(data_minus, data_plus);
     Qd = G * Qc * G.transpose();
     Qd = 0.5 * (Qd + Qd.transpose());
     cache_state_covariance = F * cache_state_covariance * F.transpose() + Qd;
@@ -262,7 +263,8 @@ bool Propagator::fast_state_propagate(std::shared_ptr<State> state, double times
   Eigen::MatrixXd covariance_tmp = Phi * cache_state_covariance * Phi.transpose();
   covariance.block(0, 0, 9, 9) = covariance_tmp.block(0, 0, 9, 9);
   double dt = prop_data.at(prop_data.size() - 1).timestamp - prop_data.at(prop_data.size() - 2).timestamp;
-  covariance.block(9, 9, 3, 3) = _noises.sigma_w_2 / dt * Eigen::Matrix3d::Identity();
+  covariance.block(9, 9, 3, 3) = _noises.sigma_w_2 / dt *
+      ov_core::imu_interval_variance(prop_data.back(), prop_data[prop_data.size() - 2]) * Eigen::Matrix3d::Identity();
   return true;
 }
 
@@ -467,6 +469,7 @@ void Propagator::predict_and_compute(std::shared_ptr<State> state, const ov_core
 
   // Compute the noise injected into the state over the interval
   Qd = Eigen::MatrixXd::Zero(state->imu_intrinsic_size() + 15, state->imu_intrinsic_size() + 15);
+  Qc *= ov_core::imu_interval_variance(data_minus, data_plus);
   Qd = G * Qc * G.transpose();
   Qd = 0.5 * (Qd + Qd.transpose());
 
